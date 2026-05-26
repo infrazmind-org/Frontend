@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  color-scheme: light;
+  --app-bg: #f8fafc;
+  --app-bg-secondary: #f1f5f9;
+  --app-surface: rgba(255, 255, 255, 0.92);
+  --app-surface-muted: rgba(241, 245, 249, 0.95);
+  --app-text: #0f172a;
+  --app-text-secondary: #334155;
+  --app-muted: #64748b;
+  --app-border: rgba(15, 23, 42, 0.12);
+  --app-nav: rgba(248, 250, 252, 0.88);
+  --app-footer: #f1f5f9;
+  --app-glass-bg: rgba(255, 255, 255, 0.78);
+  --app-grid-line: rgba(15, 23, 42, 0.06);
+  --app-hero-glow: rgba(6, 104, 225, 0.12);
+  --selection: rgba(6, 104, 225, 0.22);
+}
+
+html.dark {
+  color-scheme: dark;
+  --app-bg: #040b14;
+  --app-bg-secondary: #020617;
+  --app-surface: rgba(10, 25, 47, 0.55);
+  --app-surface-muted: rgba(15, 23, 42, 0.45);
+  --app-text: #f8fafc;
+  --app-text-secondary: #e2e8f0;
+  --app-muted: #94a3b8;
+  --app-border: rgba(255, 255, 255, 0.1);
+  --app-nav: rgba(4, 11, 20, 0.82);
+  --app-footer: #040b14;
+  --app-glass-bg: rgba(15, 23, 42, 0.4);
+  --app-grid-line: rgba(255, 255, 255, 0.05);
+  --app-hero-glow: rgba(6, 104, 225, 0.2);
+  --selection: rgba(6, 104, 225, 0.3);
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased;
+    background-color: var(--app-bg);
+    color: var(--app-muted);
+    background-image:
+      radial-gradient(circle at 2px 2px, var(--app-grid-line) 1px, transparent 0),
+      radial-gradient(circle at 50% 40%, var(--app-hero-glow) 0%, transparent 55%);
+    background-size: 32px 32px, 100% 100%;
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background-color: var(--selection);
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.glass-card {
+  background: var(--app-glass-bg);
+  @apply backdrop-blur-md rounded-2xl;
+  border: 1px solid var(--app-border);
+}
