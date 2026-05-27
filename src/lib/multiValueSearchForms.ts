@@ -41,7 +41,7 @@ export function getSearchFormFields(slug: string, searchType: string): SearchFie
       ];
     case 'ecomm_analytics_v2':
       return [
-        { id: 'website_id', label: 'Website ID', required: true, placeholder: 'From Digitap Ecomm doc', inputType: 'text' },
+        { id: 'website_id', label: 'Website ID', required: true, placeholder: 'Your assigned website ID', inputType: 'text' },
         { id: 'username', label: 'Username', required: true, placeholder: 'Often mobile or login id', inputType: 'text' },
       ];
     case 'skip_tracing':

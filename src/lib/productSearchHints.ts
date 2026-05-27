@@ -11,7 +11,7 @@ export function valuePlaceholderForProduct(slug: string): string {
     contact_to_gst: '15-character GSTIN',
     epfo_employment: 'Employee full name|Employer company name',
     arm_credit_suite: 'Name|Mobile|Email optional|PAN|DOB (yyyy-mm-dd)',
-    ecomm_analytics_v2: 'website_id|username (see Digitap Ecomm doc)',
+    ecomm_analytics_v2: 'website_id|username (from your e-commerce setup)',
     vehicle_rc_plus: 'Vehicle registration number (e.g. KA01AB1234)',
     vehicle_echallan: 'Vehicle registration number',
     vehicle_fastag_toll: 'Vehicle registration number',
@@ -27,7 +27,7 @@ export function valuePlaceholderForProduct(slug: string): string {
 export function typeFieldHintForProduct(slug: string): string | null {
   const s = (slug || '').trim();
   if (s === 'skip_tracing') {
-    return 'Choose PAN or Mobile above so the value is validated as that identifier (Digitap requires one or the other).';
+    return 'Choose PAN or Mobile above so the value is validated as that identifier.';
   }
   if (s === 'mobile_to_address') {
     return 'This product only accepts a mobile number (same skip-tracing API, mobile branch).';

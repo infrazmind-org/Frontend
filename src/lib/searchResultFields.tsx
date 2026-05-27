@@ -1,39 +1,78 @@
 import React, { useMemo } from 'react';
+import { CustomerResultView } from './customerResultView';
+import { resultFieldLabel } from './resultFieldLabels';
+import { isMetadataEntry, METADATA_KEYS } from './resultMetadata';
 
-/** Human labels for API / Digitap normalized keys (extend as products grow). */
-const KEY_LABELS: Record<string, string> = {
-  searchType: 'Input type',
-  searchValue: 'Input value',
-  productSlug: 'Product',
-  status: 'Status',
-  apiSource: 'API source',
-  message: 'Message',
-  result_code: 'Result code',
-  result: 'Response payload',
-  providerRef: 'Provider reference',
-  transaction_id: 'Transaction ID',
-  url: 'Session / consent URL',
-  expires_on: 'Expires (ITR)',
-  expires: 'Expires (Ecom)',
-  detail: 'Error detail',
-  creditsRemaining: 'Credits remaining',
-  http_response_code: 'HTTP code',
-  request_id: 'Request ID',
-  client_ref_num: 'Client reference',
-};
+export { resultFieldLabel } from './resultFieldLabels';
 
-export function resultFieldLabel(key: string): string {
-  if (KEY_LABELS[key]) return KEY_LABELS[key];
-  return key
-    .replace(/_/g, ' ')
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, (s) => s.toUpperCase())
-    .trim();
+/** Shown when the API returns no usable business data. */
+export const CUSTOMER_SEARCH_EMPTY_MESSAGE =
+  'No data was returned for this search. If you believe this is an error, please contact your administrator.';
+
+/** Omitted from customer UI (vendor / internal metadata). */
+const HIDDEN_USER_KEYS = METADATA_KEYS;
+
+const USER_SUCCESS_EXTRA_KEYS = new Set(['url', 'expires', 'expires_on', 'transaction_id']);
+
+/** Legacy API bodies (pre-outcome wrapper) — extract displayable payload. */
+export function legacyCustomerPayload(data: Record<string, unknown>): Record<string, unknown> | unknown[] | null {
+  if (data.outcome === 'success' && data.data !== undefined) {
+    const d = data.data;
+    if (typeof d === 'object' && d !== null) return d as Record<string, unknown> | unknown[];
+    return { value: d };
+  }
+  if (data.outcome === 'empty') return null;
+
+  const st = data.status;
+  if (st === 'Not found' || st === 'UpstreamError' || st === 'Failed' || st === 'Denied') return null;
+  if (st !== 'Success' && st !== undefined) return null;
+
+  const res = data.result;
+  if (res !== undefined && res !== null) {
+    if (typeof res === 'object') return res as Record<string, unknown> | unknown[];
+    return { value: res };
+  }
+
+  const out: Record<string, unknown> = {};
+  for (const k of USER_SUCCESS_EXTRA_KEYS) {
+    if (data[k] !== undefined && data[k] !== null && data[k] !== '') out[k] = data[k];
+  }
+  for (const [k, v] of Object.entries(data)) {
+    if (isMetadataEntry(k, v) || USER_SUCCESS_EXTRA_KEYS.has(k) || k === 'result') continue;
+    if (v !== undefined && v !== null && v !== '') out[k] = v;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+export function CustomerSearchResult({ row }: { row: Record<string, unknown> }) {
+  if (row.outcome === 'empty') {
+    return (
+      <p className="text-sm leading-relaxed text-[var(--app-muted)]">
+        {typeof row.message === 'string' ? row.message : CUSTOMER_SEARCH_EMPTY_MESSAGE}
+      </p>
+    );
+  }
+
+  if (row.outcome === 'success' && row.data !== undefined) {
+    const d = row.data;
+    if (d !== null && (typeof d === 'object' || Array.isArray(d))) {
+      return <CustomerResultView data={d as Record<string, unknown> | unknown[]} />;
+    }
+    return <CustomerResultView data={{ value: d }} />;
+  }
+
+  const legacy = legacyCustomerPayload(row);
+  if (!legacy) {
+    return <p className="text-sm leading-relaxed text-[var(--app-muted)]">{CUSTOMER_SEARCH_EMPTY_MESSAGE}</p>;
+  }
+  if (Array.isArray(legacy)) {
+    return <CustomerResultView data={legacy} />;
+  }
+  return <CustomerResultView data={legacy} />;
 }
 
 const KEY_ORDER = [
   'status',
-  'apiSource',
   'message',
   'detail',
   'productSlug',
@@ -53,7 +92,9 @@ const KEY_ORDER = [
 
 /** Flatten top-level keys for simple CSV-style consumers (nested values as JSON strings). */
 export function normalizedEntries(data: Record<string, unknown>): { key: string; label: string; value: string }[] {
-  const keys = Object.keys(data).filter((k) => k !== 'raw' && !k.startsWith('_'));
+  const keys = Object.keys(data).filter(
+    (k) => k !== 'raw' && !k.startsWith('_') && !HIDDEN_USER_KEYS.has(k)
+  );
   const rest = keys.filter((k) => !KEY_ORDER.includes(k)).sort((a, b) => a.localeCompare(b));
   const ordered = [...KEY_ORDER.filter((k) => keys.includes(k)), ...rest];
   return ordered.map((key) => {
@@ -176,7 +217,7 @@ function ValueBlock({ value, depth = 0 }: { value: unknown; depth?: number }) {
 
 export function SearchResultKeyValue({ data }: { data: Record<string, unknown> }) {
   const keys = useMemo(() => {
-    const all = Object.keys(data).filter((k) => k !== 'raw' && !k.startsWith('_'));
+    const all = Object.keys(data).filter((k) => !isMetadataEntry(k, data[k]));
     const rest = all.filter((k) => !KEY_ORDER.includes(k)).sort((a, b) => a.localeCompare(b));
     return [...KEY_ORDER.filter((k) => all.includes(k)), ...rest];
   }, [data]);

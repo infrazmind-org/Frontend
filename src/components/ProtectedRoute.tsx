@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (!authReady) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-[var(--app-bg)] text-[var(--app-muted)]">
+      <div className="flex min-h-screen w-full items-center justify-center bg-[var(--app-bg)] text-[var(--app-muted)]">
         Loading…
       </div>
     );

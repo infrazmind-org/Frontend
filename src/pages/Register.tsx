@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Eye, EyeOff } from 'lucide-react';
 import { apiUrl, formatFastApiDetail } from '../lib/api';
+import PasswordInput from '../components/PasswordInput';
 
 const RESEND_COOLDOWN_MS = 45_000;
 
 export default function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [emailVerified, setEmailVerified] = useState(false);
@@ -75,7 +76,7 @@ export default function Register() {
         setError(formatFastApiDetail(data));
         return;
       }
-      const sec = typeof data.expires_in_seconds === 'number' ? data.expires_in_seconds : 60;
+      const sec = typeof data.expires_in_seconds === 'number' ? data.expires_in_seconds : 180;
       setOtpSent(true);
       setOtpDeadline(Date.now() + sec * 1000);
       setSecondsLeft(sec);
@@ -134,6 +135,12 @@ export default function Register() {
       setError('Verify your email first.');
       return;
     }
+    const fn = firstName.trim();
+    const ln = lastName.trim();
+    if (!fn || !ln) {
+      setError('Enter your first and last name.');
+      return;
+    }
     setRegistering(true);
     try {
       const res = await fetch(apiUrl('/api/auth/register'), {
@@ -143,6 +150,8 @@ export default function Register() {
           email: email.trim(),
           password,
           verification_token: verificationToken,
+          first_name: fn,
+          last_name: ln,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -184,31 +193,42 @@ export default function Register() {
         <form onSubmit={handleRegister} className="space-y-5">
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">Email</label>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-              <input
-                type="email"
-                autoComplete="email"
-                required
-                readOnly={emailVerified}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="min-w-0 flex-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] outline-none transition read-only:cursor-not-allowed read-only:opacity-80 focus:border-[#0668E1]/50 focus:ring-4 focus:ring-[#0668E1]/15"
-              />
-              <button
-                type="button"
-                disabled={emailVerified || busy || !email.trim() || (!canResend && otpSent)}
-                onClick={() => void requestOtp()}
-                className="shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-bg-secondary)] px-4 py-3 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-36"
-              >
-                {sendingOtp ? 'Sending…' : otpSent ? 'Resend code' : 'Verify email'}
-              </button>
-            </div>
-            {otpSent && !emailVerified && !canResend && resendWaitSec > 0 ? (
-              <p className="mt-1.5 text-xs text-[var(--app-muted)]">You can request another code in {resendWaitSec}s.</p>
-            ) : null}
             {emailVerified ? (
-              <p className="mt-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">Email verified</p>
-            ) : null}
+              <>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  readOnly
+                  value={email}
+                  className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] outline-none read-only:cursor-not-allowed read-only:opacity-80"
+                />
+                <p className="mt-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">Email verified</p>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="min-w-0 flex-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] outline-none transition focus:border-[#0668E1]/50 focus:ring-4 focus:ring-[#0668E1]/15"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy || !email.trim() || (!canResend && otpSent)}
+                    onClick={() => void requestOtp()}
+                    className="shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-bg-secondary)] px-4 py-3 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-36"
+                  >
+                    {sendingOtp ? 'Sending…' : otpSent ? 'Resend code' : 'Verify email'}
+                  </button>
+                </div>
+                {otpSent && !canResend && resendWaitSec > 0 ? (
+                  <p className="mt-1.5 text-xs text-[var(--app-muted)]">You can request another code in {resendWaitSec}s.</p>
+                ) : null}
+              </>
+            )}
           </div>
 
           {otpSent && !emailVerified ? (
@@ -241,36 +261,55 @@ export default function Register() {
                 ) : null}
               </div>
               {otpExpired ? (
-                <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">This code has expired. Request a new code with the button above.</p>
+                <p className="mt-2 text-sm text-amber-950 dark:text-amber-200">
+                  This code has expired. Request a new code with the button above.
+                </p>
               ) : null}
             </div>
           ) : null}
 
           {emailVerified ? (
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+                    First name
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="given-name"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] outline-none transition focus:border-[#0668E1]/50 focus:ring-4 focus:ring-[#0668E1]/15"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+                    Last name
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="family-name"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] outline-none transition focus:border-[#0668E1]/50 focus:ring-4 focus:ring-[#0668E1]/15"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">Password</label>
+                <PasswordInput
                   autoComplete="new-password"
                   required
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] py-3 pl-4 pr-12 text-[var(--app-text)] outline-none transition focus:border-[#0668E1]/50 focus:ring-4 focus:ring-[#0668E1]/15"
                 />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-[var(--app-muted)] hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
+                <p className="mt-1.5 text-xs text-[var(--app-muted)]">At least 6 characters.</p>
               </div>
-              <p className="mt-1.5 text-xs text-[var(--app-muted)]">At least 6 characters.</p>
-            </div>
+            </>
           ) : null}
 
           {error && (
@@ -279,7 +318,7 @@ export default function Register() {
 
           <button
             type="submit"
-            disabled={busy || !emailVerified || password.length < 6}
+            disabled={busy || !emailVerified || !firstName.trim() || !lastName.trim() || password.length < 6}
             className="w-full rounded-xl bg-[#0668E1] py-3.5 text-sm font-bold text-white shadow-lg shadow-[#0668E1]/25 transition hover:bg-[#0556ba] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {registering ? 'Submitting…' : 'Register'}

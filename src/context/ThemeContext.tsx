@@ -36,7 +36,7 @@ function syncHtmlClass(mode: ThemeMode) {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
-    const initial = readStoredTheme() || 'dark';
+    const initial = readStoredTheme() || 'light';
     syncHtmlClass(initial);
     return initial;
   });

@@ -4,10 +4,13 @@ import { Menu, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
+import { useAuth } from '../context/AuthContext';
 
 export default function Layout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { token } = useAuth();
+  const isLoggedIn = Boolean(token);
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -19,7 +22,10 @@ export default function Layout() {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
-  const showLoginNavCta = location.pathname !== '/login' && location.pathname !== '/register';
+  const showLoginNavCta =
+    location.pathname !== '/login' &&
+    location.pathname !== '/register' &&
+    location.pathname !== '/forgot-password';
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--app-bg)] font-sans text-[var(--app-muted)] selection:bg-[#0668E1]/30">
@@ -50,10 +56,10 @@ export default function Layout() {
               {showLoginNavCta && (
                 <div className="hidden md:flex">
                   <Link
-                    to="/login"
+                    to={isLoggedIn ? '/dashboard' : '/login'}
                     className="rounded-xl bg-[#0668E1] px-6 py-2 text-sm font-semibold tracking-tight text-white shadow-lg shadow-[#0668E1]/20 transition-all hover:bg-[#0556ba]"
                   >
-                    Login
+                    {isLoggedIn ? 'Go to dashboard' : 'Login'}
                   </Link>
                 </div>
               )}
@@ -123,11 +129,11 @@ export default function Layout() {
               {showLoginNavCta && (
                 <div className="mt-auto space-y-4">
                   <Link
-                    to="/login"
+                    to={isLoggedIn ? '/dashboard' : '/login'}
                     onClick={closeMenu}
                     className="block w-full rounded-xl bg-[#0668E1] py-4 text-center font-bold tracking-tight text-white shadow-lg shadow-[#0668E1]/20 transition-all hover:bg-[#0556ba]"
                   >
-                    Login
+                    {isLoggedIn ? 'Go to dashboard' : 'Login'}
                   </Link>
                 </div>
               )}

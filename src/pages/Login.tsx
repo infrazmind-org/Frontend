@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl, formatFastApiDetail } from '../lib/api';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Login() {
   const { login } = useAuth();
@@ -59,7 +60,7 @@ export default function Login() {
         </p>
 
         {registered && (
-          <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-900 dark:text-emerald-100">
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-100">
             Thanks for registering. Your request is in the admin queue. You will receive an email at this address when you can sign in.
           </div>
         )}
@@ -79,16 +80,19 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
-              Password
-            </label>
-            <input
-              type="password"
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+                Password
+              </label>
+              <Link to="/forgot-password" className="text-xs font-semibold text-[#0668E1] hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+            <PasswordInput
               autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] outline-none transition focus:border-[#0668E1]/50 focus:ring-4 focus:ring-[#0668E1]/15"
             />
           </div>
           {error && (

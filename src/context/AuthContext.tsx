@@ -4,9 +4,12 @@ import { apiFetch } from '../lib/api';
 interface User {
   id: number;
   email: string;
+  first_name?: string;
+  last_name?: string;
   role: string;
   status: string;
   credits: number;
+  created_at?: string;
 }
 
 interface AuthContextType {
