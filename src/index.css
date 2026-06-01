@@ -23,6 +23,15 @@ html {
   --app-grid-line: rgba(15, 23, 42, 0.06);
   --app-hero-glow: rgba(6, 104, 225, 0.12);
   --selection: rgba(6, 104, 225, 0.22);
+  --app-success-bg: #ecfdf5;
+  --app-success-border: #34d399;
+  --app-success-text: #065f46;
+  --app-error-bg: #fef2f2;
+  --app-error-border: #fca5a5;
+  --app-error-text: #991b1b;
+  --app-warn-bg: #fffbeb;
+  --app-warn-border: #d97706;
+  --app-warn-text: #78350f;
 }
 
 html.dark {
@@ -41,6 +50,15 @@ html.dark {
   --app-grid-line: rgba(255, 255, 255, 0.05);
   --app-hero-glow: rgba(6, 104, 225, 0.2);
   --selection: rgba(6, 104, 225, 0.3);
+  --app-success-bg: rgba(6, 78, 59, 0.45);
+  --app-success-border: rgba(52, 211, 153, 0.45);
+  --app-success-text: #d1fae5;
+  --app-error-bg: rgba(127, 29, 29, 0.4);
+  --app-error-border: rgba(248, 113, 113, 0.45);
+  --app-error-text: #fecaca;
+  --app-warn-bg: rgba(120, 53, 15, 0.5);
+  --app-warn-border: rgba(251, 191, 36, 0.5);
+  --app-warn-text: #fef3c7;
 }
 
 @layer base {
@@ -76,4 +94,47 @@ html.dark {
   background: var(--app-glass-bg);
   @apply backdrop-blur-md rounded-2xl;
   border: 1px solid var(--app-border);
+}
+
+@layer components {
+  .app-alert-success {
+    border-radius: 0.75rem;
+    border: 1px solid var(--app-success-border);
+    background-color: var(--app-success-bg);
+    color: var(--app-success-text);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .app-alert-error {
+    border-radius: 0.75rem;
+    border: 1px solid var(--app-error-border);
+    background-color: var(--app-error-bg);
+    color: var(--app-error-text);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .app-alert-warn {
+    border-radius: 0.75rem;
+    border: 1px solid var(--app-warn-border);
+    background-color: var(--app-warn-bg);
+    color: var(--app-warn-text);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .app-badge-success {
+    border-radius: 0.5rem;
+    border: 1px solid var(--app-success-border);
+    background-color: var(--app-success-bg);
+    color: var(--app-success-text);
+    padding: 0.25rem 0.625rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
 }

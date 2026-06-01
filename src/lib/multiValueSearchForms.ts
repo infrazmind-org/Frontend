@@ -58,8 +58,17 @@ export function getSearchFormFields(slug: string, searchType: string): SearchFie
     case 'mobile_to_address':
       return [{ id: 'mobile', label: 'Mobile number', required: true, placeholder: '10-digit Indian mobile', inputType: 'tel' }];
     case 'gst_advanced':
-    case 'contact_to_gst':
       return [{ id: 'gstin', label: 'GSTIN', required: true, placeholder: '15-character GSTIN', inputType: 'text' }];
+    case 'contact_to_gst':
+      return [
+        {
+          id: 'mobile',
+          label: 'Contact number',
+          required: true,
+          placeholder: '10-digit Indian mobile',
+          inputType: 'tel',
+        },
+      ];
     case 'itr_consent_flow':
       return [{ id: 'pan', label: 'PAN', required: true, placeholder: 'ABCDE1234F', inputType: 'text' }];
     case 'pan_details_plus':
@@ -109,8 +118,9 @@ export function composeApiValue(
     case 'mobile_to_address':
       return stripMobile(v('mobile'));
     case 'gst_advanced':
-    case 'contact_to_gst':
       return v('gstin').toUpperCase();
+    case 'contact_to_gst':
+      return stripMobile(v('mobile'));
     case 'itr_consent_flow':
     case 'pan_details_plus':
     case 'pan_profile':
@@ -194,11 +204,19 @@ export function validateSearchForm(
     }
   }
 
-  if (s === 'gst_advanced' || s === 'contact_to_gst') {
+  if (s === 'gst_advanced') {
     const g = v('gstin').toUpperCase();
     if (!_GSTIN.test(g)) {
       fieldErrors.gstin = 'Enter a valid 15-character GSTIN.';
       return { ok: false, message: 'Invalid GSTIN.', fieldErrors };
+    }
+  }
+
+  if (s === 'contact_to_gst') {
+    const mob = stripMobile(v('mobile'));
+    if (!_MOB.test(mob)) {
+      fieldErrors.mobile = 'Enter a valid 10-digit Indian mobile.';
+      return { ok: false, message: 'Invalid mobile number.', fieldErrors };
     }
   }
 

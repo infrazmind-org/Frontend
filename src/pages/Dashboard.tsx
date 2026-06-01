@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LayoutDashboard, Search, Table2 } from 'lucide-react';
+import { Download, LayoutDashboard, Search, Table2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch, formatFastApiDetail } from '../lib/api';
-import { typeFieldHintForProduct, valuePlaceholderForProduct } from '../lib/productSearchHints';
+import { apiFetch, formatFastApiDetail, sanitizeCustomerFacingError } from '../lib/api';
+import {
+  bulkExampleForProduct,
+  typeFieldHintForProduct,
+  valuePlaceholderForProduct,
+} from '../lib/productSearchHints';
+import { downloadBulkResultsCsv } from '../lib/bulkResultsCsv';
 import { getSearchFormFields, validateSearchForm } from '../lib/multiValueSearchForms';
 import { CustomerSearchResult } from '../lib/searchResultFields';
 import { refineSearchTypeOptions } from '../lib/searchTypeOptions';
@@ -17,7 +22,7 @@ const SEARCH_TYPES = ['Auto', 'Aadhaar', 'PAN', 'Mobile', 'Email', 'Bank', 'Unkn
 type MyApiRow = { slug: string; name: string; credits_per_hit: number; allowed_search_types?: string[] };
 
 export default function Dashboard() {
-  const { user, token, refreshUser } = useAuth();
+  const { user, token, authReady, refreshUser } = useAuth();
   const [tab, setTab] = useState<Tab>('single');
 
   const [singleType, setSingleType] = useState('PAN');
@@ -32,7 +37,6 @@ export default function Dashboard() {
   const [bulkType, setBulkType] = useState('PAN');
   const [bulkProduct, setBulkProduct] = useState('');
   const [bulkText, setBulkText] = useState('');
-  const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [bulkMeta, setBulkMeta] = useState<{ processedCount: number; skippedCount: number } | null>(null);
@@ -71,6 +75,11 @@ export default function Dashboard() {
 
   const bulkTypeRefined = useMemo(() => refineSearchTypeOptions(bulkTypeOptionsRaw), [bulkTypeOptionsRaw]);
 
+  const bulkLineCount = useMemo(
+    () => bulkText.split(/\r?\n/).map((ln) => ln.trim()).filter(Boolean).length,
+    [bulkText]
+  );
+
   const productOptions = useMemo(
     () =>
       myApis.map((a) => ({
@@ -81,7 +90,14 @@ export default function Dashboard() {
   );
 
   useEffect(() => {
-    if (!token) {
+    if (!token || !authReady) {
+      if (!token) {
+        setMyApis([]);
+        setApisLoading(false);
+      }
+      return;
+    }
+    if (user?.terms_ack_required) {
       setMyApis([]);
       setApisLoading(false);
       return;
@@ -106,7 +122,7 @@ export default function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, authReady, user?.terms_ack_required]);
 
   useEffect(() => {
     if (!myApis.length) return;
@@ -178,7 +194,7 @@ export default function Dashboard() {
         return;
       }
       if (data && typeof data === 'object' && 'error' in data && (data as { error?: unknown }).error) {
-        setSingleError(String((data as { error: unknown }).error));
+        setSingleError(sanitizeCustomerFacingError(String((data as { error: unknown }).error)));
         setSingleResults([]);
         return;
       }
@@ -195,23 +211,18 @@ export default function Dashboard() {
     e.preventDefault();
     if (!token || !hasApis || !bulkProduct) return;
     setBulkError(null);
+    if (bulkLineCount === 0) {
+      setBulkError('Enter at least one value — one identifier per line.');
+      return;
+    }
     setBulkLoading(true);
     setBulkMeta(null);
     try {
-      let res: Response;
-      if (bulkFile) {
-        const fd = new FormData();
-        fd.append('file', bulkFile);
-        fd.append('type', bulkType);
-        fd.append('productSlug', bulkProduct);
-        res = await apiFetch('/api/search/bulk', { method: 'POST', token, body: fd });
-      } else {
-        res = await apiFetch('/api/search/bulk', {
-          method: 'POST',
-          token,
-          body: JSON.stringify({ type: bulkType, values: bulkText, productSlug: bulkProduct }),
-        });
-      }
+      const res = await apiFetch('/api/search/bulk', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({ type: bulkType, values: bulkText, productSlug: bulkProduct }),
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setBulkError(formatFastApiDetail(data));
@@ -220,7 +231,6 @@ export default function Dashboard() {
       }
       setBulkMeta({ processedCount: data.processedCount, skippedCount: data.skippedCount });
       setBulkResults((data.results || []) as SearchResultRow[]);
-      setBulkFile(null);
       await refreshUser();
     } catch {
       setBulkError('Network error');
@@ -331,7 +341,7 @@ export default function Dashboard() {
                       className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)]"
                     />
                     {singleFieldErrors[f.id] ? (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{singleFieldErrors[f.id]}</p>
+                      <p className="mt-1 text-sm text-[var(--app-error-text)]">{singleFieldErrors[f.id]}</p>
                     ) : null}
                   </div>
                 ))}
@@ -350,7 +360,7 @@ export default function Dashboard() {
             )}
             </div>
             <div className="shrink-0 border-t border-[var(--app-border)] px-6 py-4">
-            {singleError && <p className="mb-3 text-sm text-red-600 dark:text-red-400">{singleError}</p>}
+            {singleError && <p className="app-alert-error mb-3">{singleError}</p>}
             <button
               type="submit"
               disabled={singleLoading}
@@ -371,11 +381,19 @@ export default function Dashboard() {
             onSubmit={runBulk}
             className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] backdrop-blur-md"
           >
-            <h2 className="shrink-0 px-6 pt-6 font-display text-lg font-bold text-[var(--app-text)]">Bulk input</h2>
+            <h2 className="shrink-0 px-6 pt-6 font-display text-lg font-bold text-[var(--app-text)]">Bulk search</h2>
             <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-2 pt-2">
-            <p className="mb-4 text-sm text-[var(--app-muted)]">
-              Paste one value per line or upload CSV/Excel (first column). Processing stops when credits are exhausted; extra rows are skipped.
-              Types allowed for bulk follow the selected product, same as single search.
+            <ol className="mb-4 list-decimal space-y-1.5 pl-5 text-sm text-[var(--app-text-secondary)]">
+              <li>Select the product and input type (same rules as single search).</li>
+              <li>
+                Enter <strong className="text-[var(--app-text)]">one identifier per line</strong> in the box below — do not use commas or
+                spreadsheets; press Enter after each value.
+              </li>
+              <li>Run the search. Each line uses one credit when the lookup succeeds.</li>
+              <li>Download results as CSV from the results panel when finished.</li>
+            </ol>
+            <p className="mb-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-3 py-2 text-xs text-[var(--app-muted)]">
+              Processing stops if credits run out. Invalid lines are skipped and counted in “skipped”.
             </p>
             <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
               Product
@@ -403,21 +421,25 @@ export default function Dashboard() {
               refined={bulkTypeRefined}
               hint={typeFieldHintForProduct(bulkProduct)}
             />
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">Paste values</label>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+                Values (one per line)
+              </label>
+              <span className="text-xs text-[var(--app-muted)]">
+                {bulkLineCount} line{bulkLineCount === 1 ? '' : 's'}
+              </span>
+            </div>
             <textarea
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
-              rows={8}
-              className="mb-4 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 font-mono text-sm text-[var(--app-text)]"
-              placeholder={`${valuePlaceholderForProduct(bulkProduct)} — one per line`}
+              rows={10}
+              spellCheck={false}
+              className="mb-1 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 font-mono text-sm leading-relaxed text-[var(--app-text)]"
+              placeholder={bulkExampleForProduct(bulkProduct)}
             />
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">Or upload file</label>
-            <input
-              type="file"
-              accept=".csv,.txt,.xlsx,.xls"
-              onChange={(e) => setBulkFile(e.target.files?.[0] ?? null)}
-              className="mb-4 w-full text-sm text-[var(--app-muted)]"
-            />
+            <p className="mb-4 text-xs text-[var(--app-muted)]">
+              Format: {valuePlaceholderForProduct(bulkProduct)}
+            </p>
             {bulkMeta && (
               <p className="mb-4 text-sm text-[var(--app-muted)]">
                 Processed <strong className="text-[var(--app-text)]">{bulkMeta.processedCount}</strong>, skipped{' '}
@@ -426,10 +448,10 @@ export default function Dashboard() {
             )}
             </div>
             <div className="shrink-0 border-t border-[var(--app-border)] px-6 py-4">
-            {bulkError && <p className="mb-3 text-sm text-red-600 dark:text-red-400">{bulkError}</p>}
+            {bulkError && <p className="app-alert-error mb-3">{bulkError}</p>}
             <button
               type="submit"
-              disabled={bulkLoading || (!bulkText.trim() && !bulkFile)}
+              disabled={bulkLoading || bulkLineCount === 0}
               className="w-full rounded-xl bg-[#0668E1] py-3 text-sm font-bold text-white hover:bg-[#0556ba] disabled:opacity-50"
             >
               {bulkLoading ? 'Processing…' : 'Run bulk search'}
@@ -437,7 +459,11 @@ export default function Dashboard() {
             </div>
           </form>
 
-          <ResultsPanel title="Bulk results" rows={bulkResults} />
+          <ResultsPanel
+            title="Bulk results"
+            rows={bulkResults}
+            csvDownloadSlug={bulkProduct}
+          />
         </div>
       )}
       </div>
@@ -487,10 +513,30 @@ function InputTypeField({
   );
 }
 
-function ResultsPanel({ title, rows }: { title: string; rows: SearchResultRow[] }) {
+function ResultsPanel({
+  title,
+  rows,
+  csvDownloadSlug,
+}: {
+  title: string;
+  rows: SearchResultRow[];
+  csvDownloadSlug?: string;
+}) {
   return (
     <div className="flex min-h-0 min-w-0 w-full flex-col overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] backdrop-blur-md">
-      <h2 className="shrink-0 px-6 pt-6 font-display text-lg font-bold text-[var(--app-text)]">{title}</h2>
+      <div className="flex shrink-0 items-start justify-between gap-3 px-6 pt-6">
+        <h2 className="font-display text-lg font-bold text-[var(--app-text)]">{title}</h2>
+        {csvDownloadSlug && rows.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => downloadBulkResultsCsv(rows as Record<string, unknown>[], csvDownloadSlug)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#0668E1]/40 bg-[#0668E1]/10 px-3 py-2 text-xs font-bold text-[#0668E1] transition hover:bg-[#0668E1]/15"
+          >
+            <Download className="h-4 w-4" />
+            Download CSV
+          </button>
+        ) : null}
+      </div>
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-auto px-6 pb-6 pt-4">
       {rows.length === 0 ? (
         <p className="text-sm text-[var(--app-muted)]">Run a search to see results here.</p>
@@ -501,11 +547,17 @@ function ResultsPanel({ title, rows }: { title: string; rows: SearchResultRow[] 
               key={i}
               className="rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)]/40 p-4 dark:bg-[var(--app-bg)]/20"
             >
-              {rows.length > 1 && (
+              {rows.length > 1 ? (
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
                   Result {i + 1}
+                  {typeof (row as Record<string, unknown>).searchValue === 'string' &&
+                  (row as Record<string, unknown>).searchValue ? (
+                    <span className="mt-1 block font-mono normal-case text-[var(--app-text)]">
+                      {(row as Record<string, unknown>).searchValue as string}
+                    </span>
+                  ) : null}
                 </p>
-              )}
+              ) : null}
               <CustomerSearchResult row={row as Record<string, unknown>} />
             </div>
           ))}

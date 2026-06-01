@@ -1,13 +1,14 @@
 import React, { useMemo } from 'react';
 import { CustomerResultView } from './customerResultView';
 import { resultFieldLabel } from './resultFieldLabels';
+import { sanitizeCustomerFacingError } from './api';
 import { isMetadataEntry, METADATA_KEYS } from './resultMetadata';
 
 export { resultFieldLabel } from './resultFieldLabels';
 
 /** Shown when the API returns no usable business data. */
 export const CUSTOMER_SEARCH_EMPTY_MESSAGE =
-  'No data was returned for this search. If you believe this is an error, please contact your administrator.';
+  'This search could not be completed. Please try again later or contact your administrator.';
 
 /** Omitted from customer UI (vendor / internal metadata). */
 const HIDDEN_USER_KEYS = METADATA_KEYS;
@@ -45,11 +46,21 @@ export function legacyCustomerPayload(data: Record<string, unknown>): Record<str
 }
 
 export function CustomerSearchResult({ row }: { row: Record<string, unknown> }) {
+  const inputLabel = typeof row.searchValue === 'string' ? row.searchValue.trim() : '';
+
   if (row.outcome === 'empty') {
+    const rawMsg = typeof row.message === 'string' ? row.message.trim() : '';
+    const msg = rawMsg ? sanitizeCustomerFacingError(rawMsg) : CUSTOMER_SEARCH_EMPTY_MESSAGE;
     return (
-      <p className="text-sm leading-relaxed text-[var(--app-muted)]">
-        {typeof row.message === 'string' ? row.message : CUSTOMER_SEARCH_EMPTY_MESSAGE}
-      </p>
+      <div className="space-y-2">
+        {inputLabel ? (
+          <p className="font-mono text-sm text-[var(--app-text)]">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">Input · </span>
+            {inputLabel}
+          </p>
+        ) : null}
+        <p className="text-sm leading-relaxed text-[var(--app-muted)]">{msg}</p>
+      </div>
     );
   }
 

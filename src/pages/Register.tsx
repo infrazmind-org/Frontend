@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { apiUrl, formatFastApiDetail } from '../lib/api';
 import PasswordInput from '../components/PasswordInput';
+import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
+import { TERMS_VERSION } from '../content/termsAndConditions';
 
 const RESEND_COOLDOWN_MS = 45_000;
 
@@ -24,6 +26,8 @@ export default function Register() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [registering, setRegistering] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const otpEmailSnapshot = useRef<string | null>(null);
 
@@ -141,6 +145,11 @@ export default function Register() {
       setError('Enter your first and last name.');
       return;
     }
+    if (!termsAccepted) {
+      setError('You must accept the Terms and Conditions to register.');
+      setTermsModalOpen(true);
+      return;
+    }
     setRegistering(true);
     try {
       const res = await fetch(apiUrl('/api/auth/register'), {
@@ -152,6 +161,8 @@ export default function Register() {
           verification_token: verificationToken,
           first_name: fn,
           last_name: ln,
+          terms_accepted: true,
+          terms_version: TERMS_VERSION,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -202,7 +213,7 @@ export default function Register() {
                   value={email}
                   className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] outline-none read-only:cursor-not-allowed read-only:opacity-80"
                 />
-                <p className="mt-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">Email verified</p>
+                <p className="app-badge-success mt-1.5 inline-block text-xs">Email verified</p>
               </>
             ) : (
               <>
@@ -312,13 +323,33 @@ export default function Register() {
             </>
           ) : null}
 
+          {emailVerified ? (
+            <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] p-4">
+              <p className="text-sm text-[var(--app-text-secondary)]">
+                You must read and accept the Terms and Conditions before registering.
+              </p>
+              <button
+                type="button"
+                onClick={() => setTermsModalOpen(true)}
+                className="mt-3 rounded-xl border border-[#0668E1]/40 bg-[#0668E1]/10 px-4 py-2.5 text-sm font-semibold text-[#0668E1] transition hover:bg-[#0668E1]/15"
+              >
+                {termsAccepted ? 'Terms accepted — review again' : 'Read Terms and Conditions'}
+              </button>
+              {termsAccepted ? (
+                <p className="app-badge-success mt-2 inline-block text-xs">Terms and Conditions accepted</p>
+              ) : null}
+            </div>
+          ) : null}
+
           {error && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">{error}</div>
+            <div className="app-alert-error">{error}</div>
           )}
 
           <button
             type="submit"
-            disabled={busy || !emailVerified || !firstName.trim() || !lastName.trim() || password.length < 6}
+            disabled={
+              busy || !emailVerified || !firstName.trim() || !lastName.trim() || password.length < 6 || !termsAccepted
+            }
             className="w-full rounded-xl bg-[#0668E1] py-3.5 text-sm font-bold text-white shadow-lg shadow-[#0668E1]/25 transition hover:bg-[#0556ba] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {registering ? 'Submitting…' : 'Register'}
@@ -332,6 +363,21 @@ export default function Register() {
           </Link>
         </p>
       </motion.div>
+
+      <TermsAcceptanceModal
+        open={termsModalOpen}
+        context={{
+          userName: [firstName, lastName].map((s) => s.trim()).filter(Boolean).join(' ') || email.trim(),
+          userId: email.trim(),
+        }}
+        title="Terms and Conditions"
+        subtitle="Review the full Terms and Conditions before creating your account."
+        confirmLabel="I agree to the Terms and Conditions"
+        onConfirm={() => {
+          setTermsAccepted(true);
+          setTermsModalOpen(false);
+        }}
+      />
     </div>
   );
 }

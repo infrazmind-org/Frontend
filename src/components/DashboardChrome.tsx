@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 import ThemeSwitch from './ThemeSwitch';
 import ProfileMenu from './ProfileMenu';
+import TermsGate from './TermsGate';
 
 export default function DashboardChrome() {
   const { user } = useAuth();
@@ -30,8 +31,9 @@ export default function DashboardChrome() {
           </div>
         </div>
       </header>
-      <main className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
+      <main className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
         <Outlet />
+        <TermsGate />
       </main>
     </div>
   );

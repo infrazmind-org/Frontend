@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../lib/api';
 
-interface User {
+export interface User {
   id: number;
   email: string;
   first_name?: string;
@@ -10,6 +10,10 @@ interface User {
   status: string;
   credits: number;
   created_at?: string;
+  terms_version?: string;
+  terms_accepted_version?: string | null;
+  terms_accepted_at?: string | null;
+  terms_ack_required?: boolean;
 }
 
 interface AuthContextType {

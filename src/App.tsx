@@ -17,9 +17,10 @@ import Settings from './pages/Settings';
 import ChangePassword from './pages/ChangePassword';
 import ForgotPassword from './pages/ForgotPassword';
 import NotFound from './pages/NotFound';
-import Pricing from './pages/Pricing';
 import Contact from './pages/Contact';
 import Careers from './pages/Careers';
+import AccessRegistration from './pages/AccessRegistration';
+import HybridContent from './pages/HybridContent';
 
 export default function App() {
   return (
@@ -44,8 +45,9 @@ export default function App() {
             <Route path="register" element={<Register />} />
             <Route path="forgot-password" element={<ForgotPassword />} />
             <Route path="services" element={<Services />} />
+            <Route path="services/hybrid-content" element={<HybridContent />} />
+            <Route path="access-registration" element={<AccessRegistration />} />
             <Route path="contact" element={<Contact />} />
-            <Route path="pricing" element={<Pricing />} />
             <Route path="careers" element={<Careers />} />
             <Route path="*" element={<NotFound />} />
           </Route>

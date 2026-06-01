@@ -53,6 +53,7 @@ function formatScalar(value: unknown): string {
   if (typeof value === 'number') return String(value);
   if (typeof value === 'object') return '—';
   const s = String(value).trim();
+  if (/digitap|upstreamerror|upstream error/i.test(s)) return '—';
   if (s === '') return '—';
   if (s === 'Y') return 'Yes';
   if (s === 'N') return 'No';
@@ -241,9 +242,7 @@ function ResultHighlight({ data }: { data: Record<string, unknown> }) {
           </span>
         )}
         {panStatus && !isEmptyDisplayValue(panStatus) && (
-          <span className="rounded-lg bg-emerald-500/15 px-2.5 py-1 font-medium text-emerald-900 dark:text-emerald-300">
-            {formatScalar(panStatus)}
-          </span>
+          <span className="app-badge-success">{formatScalar(panStatus)}</span>
         )}
       </div>
     </div>

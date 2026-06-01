@@ -34,15 +34,26 @@ export function apiFetch(path: string, options: ApiFetchOptions = {}) {
   });
 }
 
+const VENDOR_ERROR_MARKERS = /digitap|upstream|vendor|http_response|result_code|digitap_/i;
+
+/** Hide vendor/Digitap technical errors from customer-facing UI. */
+export function sanitizeCustomerFacingError(message: string): string {
+  const t = (message || '').trim();
+  if (!t || VENDOR_ERROR_MARKERS.test(t)) {
+    return 'This search could not be completed. Please try again later or contact your administrator.';
+  }
+  return t;
+}
+
 /** Parse FastAPI `detail` (string, object, or validation list) and legacy `error` string. */
 export function formatFastApiDetail(data: unknown): string {
   if (data && typeof data === 'object' && 'detail' in data) {
     const d = (data as { detail: unknown }).detail;
-    if (typeof d === 'string') return d;
+    if (typeof d === 'string') return sanitizeCustomerFacingError(d);
     if (Array.isArray(d) && d.length > 0) {
       const first = d[0];
       if (first && typeof first === 'object' && 'msg' in first) {
-        return String((first as { msg: unknown }).msg);
+        return sanitizeCustomerFacingError(String((first as { msg: unknown }).msg));
       }
       try {
         return JSON.stringify(d);
@@ -59,7 +70,7 @@ export function formatFastApiDetail(data: unknown): string {
     }
   }
   if (data && typeof data === 'object' && 'error' in data && typeof (data as { error: unknown }).error === 'string') {
-    return (data as { error: string }).error;
+    return sanitizeCustomerFacingError((data as { error: string }).error);
   }
   return 'Request failed';
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, formatFastApiDetail } from '../lib/api';
@@ -9,6 +9,7 @@ const RESEND_COOLDOWN_MS = 45_000;
 const DEFAULT_OTP_SECONDS = 180;
 
 export default function ChangePassword() {
+  const navigate = useNavigate();
   const { user, token } = useAuth();
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +46,11 @@ export default function ChangePassword() {
     setSuccess(null);
     setSendingOtp(true);
     try {
-      const res = await apiFetch('/api/user/change-password/request-otp', { method: 'POST', token });
+      const res = await apiFetch('/api/user/change-password/request-otp', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({}),
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(formatFastApiDetail(data));
@@ -127,9 +132,13 @@ export default function ChangePassword() {
         setError(formatFastApiDetail(data));
         return;
       }
-      setSuccess(typeof data.message === 'string' ? data.message : 'Password updated.');
+      setSuccess(typeof data.message === 'string' ? data.message : 'Password updated successfully.');
       setPassword('');
       setPassword2('');
+      window.setTimeout(
+        () => navigate('/dashboard/settings', { replace: true, state: { passwordUpdated: true } }),
+        1500
+      );
     } catch {
       setError('Network error');
     } finally {
@@ -228,15 +237,9 @@ export default function ChangePassword() {
         )}
 
         {error && (
-          <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
-            {error}
-          </p>
+          <p className="app-alert-error mt-4">{error}</p>
         )}
-        {success && (
-          <p className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-200">
-            {success}
-          </p>
-        )}
+        {success && <p className="app-alert-success mt-4">{success}</p>}
       </div>
     </div>
   );

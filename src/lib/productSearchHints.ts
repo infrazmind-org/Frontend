@@ -8,7 +8,7 @@ export function valuePlaceholderForProduct(slug: string): string {
     mobile_to_prefill: '10-digit Indian mobile',
     itr_consent_flow: 'PAN only (e.g. ABCDE1234F)',
     gst_advanced: '15-character GSTIN',
-    contact_to_gst: '15-character GSTIN',
+    contact_to_gst: '10-digit Indian mobile (contact number)',
     epfo_employment: 'Employee full name|Employer company name',
     arm_credit_suite: 'Name|Mobile|Email optional|PAN|DOB (yyyy-mm-dd)',
     ecomm_analytics_v2: 'website_id|username (from your e-commerce setup)',
@@ -36,4 +36,20 @@ export function typeFieldHintForProduct(slug: string): string | null {
     return 'Input type is fixed to PAN for the ITR consent URL step.';
   }
   return null;
+}
+
+/** Example lines for bulk search textarea placeholder. */
+export function bulkExampleForProduct(slug: string): string {
+  const s = (slug || '').trim();
+  const examples: Record<string, string> = {
+    pan_details_plus: 'ABCDE1234F\nFGHIJ5678K',
+    pan_profile: 'ABCDE1234F\nFGHIJ5678K',
+    mobile_to_pan: '9876543210\n9123456789',
+    mobile_to_address: '9876543210\n9123456789',
+    gst_advanced: '27AABCU9603R1ZM\n29AABCT1332L1ZP',
+    contact_to_gst: '9876543210\n9123456789',
+    vehicle_rc_plus: 'KA01AB1234\nMH12DE1433',
+    skip_tracing: 'ABCDE1234F|Ravi Kumar\n9876543210|Jane Doe',
+  };
+  return examples[s] || 'value_one\nvalue_two\nvalue_three';
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, KeyRound, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, formatFastApiDetail } from '../lib/api';
@@ -13,6 +13,10 @@ function formatSignedUp(createdAt?: string): string {
 }
 
 export default function Settings() {
+  const location = useLocation();
+  const passwordUpdated = Boolean(
+    (location.state as { passwordUpdated?: boolean } | null)?.passwordUpdated
+  );
   const { user, token, refreshUser } = useAuth();
   const [supportMessage, setSupportMessage] = useState('');
   const [supportLoading, setSupportLoading] = useState(false);
@@ -69,6 +73,10 @@ export default function Settings() {
 
       <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--app-text)]">Settings</h1>
       <p className="mt-2 text-sm text-[var(--app-muted)]">Your account details and support.</p>
+
+      {passwordUpdated && (
+        <p className="app-alert-success mt-6">Your password was updated successfully.</p>
+      )}
 
       <section className="mt-8 rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 sm:p-8">
         <h2 className="font-display text-lg font-bold text-[var(--app-text)]">Account</h2>
@@ -145,15 +153,9 @@ export default function Settings() {
             />
           </div>
           {supportError && (
-            <p className="rounded-xl border border-red-500/30 bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-500/10 dark:text-red-300">
-              {supportError}
-            </p>
+            <p className="app-alert-error">{supportError}</p>
           )}
-          {supportSuccess && (
-            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-100">
-              {supportSuccess}
-            </p>
-          )}
+          {supportSuccess && <p className="app-alert-success">{supportSuccess}</p>}
           <button
             type="submit"
             disabled={supportLoading}

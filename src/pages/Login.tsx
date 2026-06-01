@@ -60,7 +60,7 @@ export default function Login() {
         </p>
 
         {registered && (
-          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-100">
+          <div className="app-alert-success mb-6">
             Thanks for registering. Your request is in the admin queue. You will receive an email at this address when you can sign in.
           </div>
         )}
@@ -96,7 +96,7 @@ export default function Login() {
             />
           </div>
           {error && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+            <div className="app-alert-error">
               {error}
             </div>
           )}
