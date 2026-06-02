@@ -30,7 +30,7 @@ export function typeFieldHintForProduct(slug: string): string | null {
     return 'Choose PAN or Mobile above so the value is validated as that identifier.';
   }
   if (s === 'mobile_to_address') {
-    return 'This product only accepts a mobile number (same skip-tracing API, mobile branch).';
+    return 'This product only accepts a mobile number (Digitap mobile-address-lookup API).';
   }
   if (s === 'itr_consent_flow') {
     return 'Input type is fixed to PAN for the ITR consent URL step.';
