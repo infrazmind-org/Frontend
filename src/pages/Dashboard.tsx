@@ -46,6 +46,7 @@ export default function Dashboard() {
   const [apisLoading, setApisLoading] = useState(true);
 
   const hasApis = myApis.length > 0;
+  const searchBusy = singleLoading || bulkLoading;
 
   const singleTypeOptionsRaw = useMemo(() => {
     const row = myApis.find((a) => a.slug === singleProduct);
@@ -276,8 +277,9 @@ export default function Dashboard() {
           <button
             key={t.id}
             type="button"
+            disabled={searchBusy}
             onClick={() => setTab(t.id)}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
               tab === t.id
                 ? 'bg-[#0668E1] text-white shadow-md shadow-[#0668E1]/25'
                 : 'text-[var(--app-muted)] hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]'
@@ -289,12 +291,20 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {searchBusy && (
+        <p className="mb-4 shrink-0 rounded-xl border border-[#0668E1]/30 bg-[#0668E1]/10 px-4 py-3 text-sm text-[var(--app-text-secondary)]">
+          Waiting for the verification provider — this can take a minute or more. Please keep this page open; inputs are
+          locked until the current search finishes.
+        </p>
+      )}
+
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {tab === 'single' && (
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:grid-rows-1 lg:gap-6 lg:overflow-hidden">
           <form
             onSubmit={runSingle}
-            className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] backdrop-blur-md"
+            className={`flex min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] backdrop-blur-md ${searchBusy ? 'opacity-70' : ''}`}
+            aria-busy={singleLoading}
           >
             <h2 className="shrink-0 px-6 pt-6 font-display text-lg font-bold text-[var(--app-text)]">Single identifier</h2>
             <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-2 pt-4">
@@ -303,8 +313,9 @@ export default function Dashboard() {
             </label>
             <select
               value={singleProduct}
+              disabled={searchBusy}
               onChange={(e) => setSingleProduct(e.target.value)}
-              className="mb-2 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)]"
+              className="mb-2 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] disabled:cursor-not-allowed"
             >
               {productOptions.map((p) => (
                 <option key={p.slug} value={p.slug}>
@@ -323,6 +334,7 @@ export default function Dashboard() {
               onChange={setSingleType}
               refined={singleTypeRefined}
               hint={typeFieldHintForProduct(singleProduct)}
+              disabled={searchBusy}
             />
             {singleFormFields ? (
               <div className="mb-4 space-y-3">
@@ -335,10 +347,11 @@ export default function Dashboard() {
                     <input
                       type={f.inputType ?? 'text'}
                       autoComplete="off"
+                      disabled={searchBusy}
                       value={singleMultiValues[f.id] ?? ''}
                       onChange={(e) => updateSingleField(f.id, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)]"
+                      className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] disabled:cursor-not-allowed"
                     />
                     {singleFieldErrors[f.id] ? (
                       <p className="mt-1 text-sm text-[var(--app-error-text)]">{singleFieldErrors[f.id]}</p>
@@ -351,9 +364,10 @@ export default function Dashboard() {
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">Value</label>
                 <textarea
                   value={singleValue}
+                  disabled={searchBusy}
                   onChange={(e) => setSingleValue(e.target.value)}
                   rows={3}
-                  className="mb-4 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)]"
+                  className="mb-4 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] disabled:cursor-not-allowed"
                   placeholder={valuePlaceholderForProduct(singleProduct)}
                 />
               </>
@@ -363,10 +377,10 @@ export default function Dashboard() {
             {singleError && <p className="app-alert-error mb-3">{singleError}</p>}
             <button
               type="submit"
-              disabled={singleLoading}
+              disabled={searchBusy}
               className="w-full rounded-xl bg-[#0668E1] py-3 text-sm font-bold text-white hover:bg-[#0556ba] disabled:opacity-50"
             >
-              {singleLoading ? 'Searching…' : 'Run search'}
+              {singleLoading ? 'Waiting for provider…' : 'Run search'}
             </button>
             </div>
           </form>
@@ -379,7 +393,8 @@ export default function Dashboard() {
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:grid-rows-1 lg:gap-6 lg:overflow-hidden">
           <form
             onSubmit={runBulk}
-            className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] backdrop-blur-md"
+            className={`flex min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] backdrop-blur-md ${searchBusy ? 'opacity-70' : ''}`}
+            aria-busy={bulkLoading}
           >
             <h2 className="shrink-0 px-6 pt-6 font-display text-lg font-bold text-[var(--app-text)]">Bulk search</h2>
             <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-2 pt-2">
@@ -400,8 +415,9 @@ export default function Dashboard() {
             </label>
             <select
               value={bulkProduct}
+              disabled={searchBusy}
               onChange={(e) => setBulkProduct(e.target.value)}
-              className="mb-2 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)]"
+              className="mb-2 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] disabled:cursor-not-allowed"
             >
               {productOptions.map((p) => (
                 <option key={p.slug} value={p.slug}>
@@ -420,6 +436,7 @@ export default function Dashboard() {
               onChange={setBulkType}
               refined={bulkTypeRefined}
               hint={typeFieldHintForProduct(bulkProduct)}
+              disabled={searchBusy}
             />
             <div className="mb-2 flex items-center justify-between gap-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
@@ -431,10 +448,11 @@ export default function Dashboard() {
             </div>
             <textarea
               value={bulkText}
+              disabled={searchBusy}
               onChange={(e) => setBulkText(e.target.value)}
               rows={10}
               spellCheck={false}
-              className="mb-1 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 font-mono text-sm leading-relaxed text-[var(--app-text)]"
+              className="mb-1 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 font-mono text-sm leading-relaxed text-[var(--app-text)] disabled:cursor-not-allowed"
               placeholder={bulkExampleForProduct(bulkProduct)}
             />
             <p className="mb-4 text-xs text-[var(--app-muted)]">
@@ -451,10 +469,10 @@ export default function Dashboard() {
             {bulkError && <p className="app-alert-error mb-3">{bulkError}</p>}
             <button
               type="submit"
-              disabled={bulkLoading || bulkLineCount === 0}
+              disabled={searchBusy || bulkLineCount === 0}
               className="w-full rounded-xl bg-[#0668E1] py-3 text-sm font-bold text-white hover:bg-[#0556ba] disabled:opacity-50"
             >
-              {bulkLoading ? 'Processing…' : 'Run bulk search'}
+              {bulkLoading ? 'Waiting for provider…' : 'Run bulk search'}
             </button>
             </div>
           </form>
@@ -478,11 +496,13 @@ function InputTypeField({
   onChange,
   refined,
   hint,
+  disabled = false,
 }: {
   value: string;
   onChange: (next: string) => void;
   refined: ReturnType<typeof refineSearchTypeOptions>;
   hint: string | null;
+  disabled?: boolean;
 }) {
   const displayValue = refined.options.includes(value) ? value : refined.defaultType;
 
@@ -494,8 +514,9 @@ function InputTypeField({
       {refined.showTypeSelector ? (
         <select
           value={displayValue}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className="mb-1 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)]"
+          className="mb-1 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-3 text-[var(--app-text)] disabled:cursor-not-allowed"
         >
           {refined.options.map((t) => (
             <option key={t} value={t}>
