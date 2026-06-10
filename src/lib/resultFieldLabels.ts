@@ -10,6 +10,8 @@ const KEY_LABELS: Record<string, string> = {
   providerRef: 'Provider reference',
   transaction_id: 'Transaction ID',
   url: 'Session / consent URL',
+  report: 'Skip tracing report',
+  report_url: 'Report',
   expires_on: 'Expires (ITR)',
   expires: 'Expires (Ecom)',
   detail: 'Error detail',

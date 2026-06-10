@@ -22,7 +22,9 @@ export default function DashboardChrome() {
                 className="rounded-full border border-[#0668E1]/20 bg-[#0668E1]/8 px-3 py-1.5 text-sm font-semibold text-[var(--app-text)]"
                 title="Credits remaining"
               >
-                <span className="tabular-nums text-[#0668E1]">{user.credits}</span>
+                <span className="tabular-nums text-[#0668E1]">
+                  {Number.isFinite(user.credits) ? Number(user.credits.toFixed(4)) : user.credits}
+                </span>
                 <span className="ml-1 text-[var(--app-muted)] font-normal">credits</span>
               </p>
             )}

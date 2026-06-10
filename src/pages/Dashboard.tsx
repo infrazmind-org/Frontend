@@ -12,6 +12,7 @@ import { getSearchFormFields, validateSearchForm } from '../lib/multiValueSearch
 import { CustomerSearchResult } from '../lib/searchResultFields';
 import { refineSearchTypeOptions } from '../lib/searchTypeOptions';
 import NoApisEnabled from '../components/NoApisEnabled';
+import { formatCredits } from '../lib/formatCredits';
 
 type Tab = 'single' | 'bulk';
 
@@ -326,7 +327,7 @@ export default function Dashboard() {
             {(() => {
               const row = myApis.find((a) => a.slug === singleProduct);
               return row ? (
-                <p className="mb-4 text-xs text-[var(--app-muted)]">{row.credits_per_hit} credits per search</p>
+                <p className="mb-4 text-xs text-[var(--app-muted)]">{formatCredits(row.credits_per_hit)} credits per search</p>
               ) : null;
             })()}
             <InputTypeField
@@ -404,7 +405,7 @@ export default function Dashboard() {
                 Enter <strong className="text-[var(--app-text)]">one identifier per line</strong> in the box below — do not use commas or
                 spreadsheets; press Enter after each value.
               </li>
-              <li>Run the search. Each line uses one credit when the lookup succeeds.</li>
+              <li>Run the search. Each line is charged when the provider completes the lookup (including not found).</li>
               <li>Download results as CSV from the results panel when finished.</li>
             </ol>
             <p className="mb-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] px-3 py-2 text-xs text-[var(--app-muted)]">
@@ -428,7 +429,7 @@ export default function Dashboard() {
             {(() => {
               const row = myApis.find((a) => a.slug === bulkProduct);
               return row ? (
-                <p className="mb-4 text-xs text-[var(--app-muted)]">{row.credits_per_hit} credits per search</p>
+                <p className="mb-4 text-xs text-[var(--app-muted)]">{formatCredits(row.credits_per_hit)} credits per search</p>
               ) : null;
             })()}
             <InputTypeField
