@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { CustomerResultView } from './customerResultView';
 import { resultFieldLabel } from './resultFieldLabels';
 import { sanitizeCustomerFacingError } from './api';
-import { isMetadataEntry, METADATA_KEYS } from './resultMetadata';
+import { unwrapVendorBusinessPayload } from './vendorResponseParsers';
 
 export { resultFieldLabel } from './resultFieldLabels';
 
@@ -10,8 +10,19 @@ export { resultFieldLabel } from './resultFieldLabels';
 export const CUSTOMER_SEARCH_EMPTY_MESSAGE =
   'This search could not be completed. Please try again later or contact your administrator.';
 
-/** Omitted from customer UI (vendor / internal metadata). */
-const HIDDEN_USER_KEYS = METADATA_KEYS;
+/** Omitted from flat key-value legacy views only (not accordion renderer). */
+const HIDDEN_USER_KEYS = new Set([
+  'apisource',
+  'api_source',
+  'providerref',
+  'provider_ref',
+  'raw',
+  'outcome',
+  'creditsremaining',
+  'searchtype',
+  'searchvalue',
+  'productslug',
+]);
 
 const USER_SUCCESS_EXTRA_KEYS = new Set(['url', 'expires', 'expires_on', 'transaction_id']);
 
@@ -23,6 +34,9 @@ export function legacyCustomerPayload(data: Record<string, unknown>): Record<str
     return { value: d };
   }
   if (data.outcome === 'empty') return null;
+
+  const unwrapped = unwrapVendorBusinessPayload(data);
+  if (unwrapped) return unwrapped;
 
   const st = data.status;
   if (st === 'Not found' || st === 'UpstreamError' || st === 'Failed' || st === 'Denied') return null;
@@ -39,7 +53,7 @@ export function legacyCustomerPayload(data: Record<string, unknown>): Record<str
     if (data[k] !== undefined && data[k] !== null && data[k] !== '') out[k] = data[k];
   }
   for (const [k, v] of Object.entries(data)) {
-    if (isMetadataEntry(k, v) || USER_SUCCESS_EXTRA_KEYS.has(k) || k === 'result') continue;
+    if (HIDDEN_USER_KEYS.has(k.toLowerCase()) || k === 'result') continue;
     if (v !== undefined && v !== null && v !== '') out[k] = v;
   }
   return Object.keys(out).length ? out : null;
