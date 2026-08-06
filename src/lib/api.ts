@@ -35,7 +35,7 @@ export function apiFetch(path: string, options: ApiFetchOptions = {}) {
 }
 
 const VENDOR_ERROR_MARKERS =
-  /digitap|upstream|vendor|ongrid|gridlines|digizene|digiverification|http_response|result_code|digitap_|forbidden_access|bad_request|credential does not have access|package not found|route matched/i;
+  /digitap|upstream|vendor|ongrid|gridlines|digizene|digiverification|http_response|result_code|digitap_|forbidden_access|bad_request|credential does not have access|package not found|route matched|source is down/i;
 
 /** Hide vendor/Digitap technical errors from customer-facing UI. */
 export function sanitizeCustomerFacingError(message: string): string {

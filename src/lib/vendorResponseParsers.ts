@@ -49,7 +49,6 @@ const ONGRID_BUSINESS_KEYS = [
   'uan_profile_data',
   'uan_number',
   'uan_list',
-  'uan_source',
   'bank_account_data',
   'profile_data',
   'rc_data',

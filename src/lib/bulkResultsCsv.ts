@@ -1,5 +1,6 @@
 import { legacyCustomerPayload } from './searchResultFields';
 import { resultFieldLabel } from './resultFieldLabels';
+import { isMetadataKey, stripMetadataDeep } from './resultMetadata';
 
 function escapeCsvCell(value: string): string {
   if (/[",\n\r]/.test(value)) {
@@ -11,6 +12,7 @@ function escapeCsvCell(value: string): string {
 function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(obj)) {
+    if (isMetadataKey(k)) continue;
     const key = prefix ? `${prefix}.${k}` : k;
     if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
       Object.assign(out, flattenObject(v as Record<string, unknown>, key));
@@ -42,7 +44,7 @@ export function bulkResultToFlatRow(row: Record<string, unknown>, index: number)
   }
 
   if (row.outcome === 'success' && row.data !== undefined) {
-    const data = row.data;
+    const data = stripMetadataDeep(row.data);
     if (data !== null && typeof data === 'object' && !Array.isArray(data)) {
       Object.assign(flat, flattenObject(data as Record<string, unknown>));
     } else {
@@ -54,7 +56,7 @@ export function bulkResultToFlatRow(row: Record<string, unknown>, index: number)
 
   const legacy = legacyCustomerPayload(row);
   if (legacy && typeof legacy === 'object' && !Array.isArray(legacy)) {
-    Object.assign(flat, flattenObject(legacy as Record<string, unknown>));
+    Object.assign(flat, flattenObject(stripMetadataDeep(legacy) as Record<string, unknown>));
   } else if (Array.isArray(legacy)) {
     flat.result = JSON.stringify(legacy);
   } else {

@@ -33,6 +33,13 @@ const METADATA_KEYS_NORMALIZED = new Set([
   'items',
   'txn_id',
   'transaction_ref',
+  'uan_source',
+  'source',
+  'data_source',
+  'source_type',
+  'vendor',
+  'vendor_slug',
+  'vendorslug',
   // Vendor-internal blobs nested inside business payloads (e.g. skip tracing).
   'metadata',
   'meta_data',

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { resultFieldLabel } from './resultFieldLabels';
+import { isMetadataKey } from './resultMetadata';
 import { unwrapVendorBusinessPayload } from './vendorResponseParsers';
 
 const PRIORITY_KEYS = [
@@ -83,6 +84,7 @@ function partitionRecord(data: Record<string, unknown>) {
   const arrays: [string, unknown[]][] = [];
 
   for (const [key, value] of Object.entries(data)) {
+    if (isMetadataKey(key)) continue;
     if (isEmptyDisplayValue(value)) continue;
     if (Array.isArray(value)) arrays.push([key, value]);
     else if (typeof value === 'object' && value !== null) nested.push([key, value]);

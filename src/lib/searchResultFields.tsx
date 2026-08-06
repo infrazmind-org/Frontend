@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { CustomerResultView } from './customerResultView';
 import { resultFieldLabel } from './resultFieldLabels';
 import { sanitizeCustomerFacingError } from './api';
+import { stripMetadataDeep } from './resultMetadata';
 import { unwrapVendorBusinessPayload } from './vendorResponseParsers';
 
 export { resultFieldLabel } from './resultFieldLabels';
@@ -22,6 +23,13 @@ const HIDDEN_USER_KEYS = new Set([
   'searchtype',
   'searchvalue',
   'productslug',
+  'source',
+  'uan_source',
+  'data_source',
+  'source_type',
+  'vendor',
+  'vendor_slug',
+  'vendorslug',
 ]);
 
 const USER_SUCCESS_EXTRA_KEYS = new Set(['url', 'expires', 'expires_on', 'transaction_id']);
@@ -59,6 +67,14 @@ export function legacyCustomerPayload(data: Record<string, unknown>): Record<str
   return Object.keys(out).length ? out : null;
 }
 
+function customerDisplayData(data: unknown): Record<string, unknown> | unknown[] {
+  const cleaned = stripMetadataDeep(data);
+  if (cleaned !== null && typeof cleaned === 'object') {
+    return cleaned as Record<string, unknown> | unknown[];
+  }
+  return { value: cleaned };
+}
+
 export function CustomerSearchResult({ row }: { row: Record<string, unknown> }) {
   const inputLabel = typeof row.searchValue === 'string' ? row.searchValue.trim() : '';
 
@@ -79,21 +95,22 @@ export function CustomerSearchResult({ row }: { row: Record<string, unknown> }) 
   }
 
   if (row.outcome === 'success' && row.data !== undefined) {
-    const d = row.data;
-    if (d !== null && (typeof d === 'object' || Array.isArray(d))) {
-      return <CustomerResultView data={d as Record<string, unknown> | unknown[]} />;
+    const d = customerDisplayData(row.data);
+    if (Array.isArray(d)) {
+      return <CustomerResultView data={d} />;
     }
-    return <CustomerResultView data={{ value: d }} />;
+    return <CustomerResultView data={d} />;
   }
 
   const legacy = legacyCustomerPayload(row);
   if (!legacy) {
     return <p className="text-sm leading-relaxed text-[var(--app-muted)]">{CUSTOMER_SEARCH_EMPTY_MESSAGE}</p>;
   }
-  if (Array.isArray(legacy)) {
-    return <CustomerResultView data={legacy} />;
+  const displayLegacy = customerDisplayData(legacy);
+  if (Array.isArray(displayLegacy)) {
+    return <CustomerResultView data={displayLegacy} />;
   }
-  return <CustomerResultView data={legacy} />;
+  return <CustomerResultView data={displayLegacy} />;
 }
 
 const KEY_ORDER = [
