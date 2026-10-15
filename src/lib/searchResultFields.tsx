@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Download } from 'lucide-react';
+import { CibilReportView, isCibilSummary } from './cibilReportView';
 import { CustomerResultView } from './customerResultView';
 import { resultFieldLabel } from './resultFieldLabels';
 import { sanitizeCustomerFacingError } from './api';
@@ -111,7 +112,7 @@ export function CustomerSearchResult({ row }: { row: Record<string, unknown> }) 
             Download report
           </a>
         )}
-        <CustomerResultView data={d} />
+        {isCibilSummary(d) ? <CibilReportView data={d} /> : <CustomerResultView data={d} />}
       </div>
     );
   }
