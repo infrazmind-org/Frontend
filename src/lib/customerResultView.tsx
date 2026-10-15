@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ExternalLink } from 'lucide-react';
 import { imageSrcForField } from './imageField';
 import { resultFieldLabel } from './resultFieldLabels';
 import { isMetadataKey } from './resultMetadata';
@@ -178,6 +178,20 @@ function DisplayValue({ value, depth = 0 }: { value: unknown; depth?: number }) 
   }
   if (typeof value === 'object' && value !== null) {
     return <CustomerResultBody data={value as Record<string, unknown>} depth={depth + 1} />;
+  }
+  if (typeof value === 'string' && /^https?:\/\//i.test(value.trim())) {
+    const url = value.trim();
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-xl bg-[#0668E1] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0556ba]"
+      >
+        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+        {url.toLowerCase().includes('.pdf') ? 'Open PDF' : 'Open link'}
+      </a>
+    );
   }
   return (
     <span className="whitespace-pre-wrap break-words text-sm font-medium leading-snug text-[var(--app-text)]">

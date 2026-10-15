@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { CustomerResultView } from './customerResultView';
 import { resultFieldLabel } from './resultFieldLabels';
 import { sanitizeCustomerFacingError } from './api';
-import { stripMetadataDeep } from './resultMetadata';
+import { isMetadataEntry, stripMetadataDeep } from './resultMetadata';
 import { unwrapVendorBusinessPayload } from './vendorResponseParsers';
 
 export { resultFieldLabel } from './resultFieldLabels';
