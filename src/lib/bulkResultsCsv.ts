@@ -1,3 +1,4 @@
+import { isImageField } from './imageField';
 import { legacyCustomerPayload } from './searchResultFields';
 import { resultFieldLabel } from './resultFieldLabels';
 import { isMetadataKey, stripMetadataDeep } from './resultMetadata';
@@ -12,7 +13,7 @@ function escapeCsvCell(value: string): string {
 function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (isMetadataKey(k)) continue;
+    if (isMetadataKey(k) || isImageField(k, v)) continue;
     const key = prefix ? `${prefix}.${k}` : k;
     if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
       Object.assign(out, flattenObject(v as Record<string, unknown>, key));
@@ -50,6 +51,7 @@ export function bulkResultToFlatRow(row: Record<string, unknown>, index: number)
     } else {
       flat.result = typeof data === 'string' ? data : JSON.stringify(data);
     }
+    if (typeof row.reportUrl === 'string') flat.report_download = row.reportUrl;
     if (row.creditsRemaining !== undefined) flat.credits_remaining = String(row.creditsRemaining);
     return flat;
   }
@@ -66,7 +68,7 @@ export function bulkResultToFlatRow(row: Record<string, unknown>, index: number)
   return flat;
 }
 
-const CSV_HEADER_ORDER = ['row', 'search_value', 'outcome', 'message', 'credits_remaining'];
+const CSV_HEADER_ORDER = ['row', 'search_value', 'outcome', 'message', 'report_download', 'credits_remaining'];
 
 export function buildBulkResultsCsv(rows: Record<string, unknown>[]): string {
   const flatRows = rows.map((r, i) => bulkResultToFlatRow(r, i));

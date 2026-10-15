@@ -69,6 +69,41 @@ export function getSearchFormFields(slug: string, searchType: string): SearchFie
           inputType: 'tel',
         },
       ];
+    case 'gas_connection':
+      return [
+        {
+          id: 'mobile',
+          label: 'Mobile number',
+          required: true,
+          placeholder: '10-digit Indian mobile',
+          inputType: 'tel',
+        },
+        {
+          id: 'provider',
+          label: 'Gas provider',
+          required: true,
+          placeholder: 'indane, bharatgas, or hp',
+          inputType: 'text',
+        },
+      ];
+    case 'cibil_report_v7':
+      return [
+        { id: 'fullname', label: 'Full name', required: true, placeholder: 'As on PAN', inputType: 'text' },
+        { id: 'mobile', label: 'Mobile number', required: true, placeholder: '10-digit Indian mobile', inputType: 'tel' },
+        { id: 'pan', label: 'PAN', required: true, placeholder: 'ABCDE1234F', inputType: 'text' },
+      ];
+    case 'cibil_report_v10':
+      return [
+        { id: 'first_name', label: 'First name', required: true, placeholder: 'First name', inputType: 'text' },
+        { id: 'last_name', label: 'Last name', required: true, placeholder: 'Last name', inputType: 'text' },
+        { id: 'mobile', label: 'Mobile number', required: true, placeholder: '10-digit Indian mobile', inputType: 'tel' },
+        { id: 'email', label: 'Email', required: true, placeholder: 'name@example.com', inputType: 'email' },
+        { id: 'address', label: 'Address', required: true, placeholder: 'House, street, city', inputType: 'text' },
+        { id: 'pin_code', label: 'PIN code', required: true, placeholder: '6-digit PIN', inputType: 'tel' },
+        { id: 'dob', label: 'Date of birth', required: true, placeholder: 'yyyy-mm-dd', inputType: 'text' },
+        { id: 'gender', label: 'Gender', required: true, placeholder: 'Male, Female, or Other', inputType: 'text' },
+        { id: 'pan', label: 'PAN', required: true, placeholder: 'ABCDE1234F', inputType: 'text' },
+      ];
     case 'itr_consent_flow':
       return [{ id: 'pan', label: 'PAN', required: true, placeholder: 'ABCDE1234F', inputType: 'text' }];
     case 'pan_details_plus':
@@ -79,6 +114,7 @@ export function getSearchFormFields(slug: string, searchType: string): SearchFie
       return [{ id: 'pan', label: 'PAN', required: true, placeholder: 'ABCDE1234F', inputType: 'text' }];
     case 'mobile_to_prefill':
     case 'mobile_to_pan':
+    case 'mobile_to_bank_account':
       return [{ id: 'mobile', label: 'Mobile number', required: true, placeholder: '10-digit Indian mobile', inputType: 'tel' }];
     case 'rc_advanced_validation':
     case 'vehicle_rc_plus':
@@ -121,6 +157,22 @@ export function composeApiValue(
       return v('gstin').toUpperCase();
     case 'contact_to_gst':
       return stripMobile(v('mobile'));
+    case 'gas_connection':
+      return `${stripMobile(v('mobile'))}|${v('provider').toLowerCase()}`;
+    case 'cibil_report_v7':
+      return [v('fullname'), stripMobile(v('mobile')), v('pan').toUpperCase()].join('|');
+    case 'cibil_report_v10':
+      return [
+        v('first_name'),
+        v('last_name'),
+        stripMobile(v('mobile')),
+        v('email'),
+        v('address'),
+        v('pin_code'),
+        v('dob'),
+        v('gender'),
+        v('pan').toUpperCase(),
+      ].join('|');
     case 'itr_consent_flow':
     case 'pan_details_plus':
     case 'pan_profile':
@@ -130,6 +182,7 @@ export function composeApiValue(
       return v('pan').toUpperCase();
     case 'mobile_to_prefill':
     case 'mobile_to_pan':
+    case 'mobile_to_bank_account':
       return stripMobile(v('mobile'));
     case 'rc_advanced_validation':
     case 'vehicle_rc_plus':
@@ -196,7 +249,7 @@ export function validateSearchForm(
     }
   }
 
-  if (s === 'mobile_to_address' || s === 'mobile_to_prefill' || s === 'mobile_to_pan') {
+  if (s === 'mobile_to_address' || s === 'mobile_to_prefill' || s === 'mobile_to_pan' || s === 'mobile_to_bank_account') {
     const mob = stripMobile(v('mobile'));
     if (!_MOB.test(mob)) {
       fieldErrors.mobile = 'Enter a valid 10-digit Indian mobile.';
@@ -217,6 +270,37 @@ export function validateSearchForm(
     if (!_MOB.test(mob)) {
       fieldErrors.mobile = 'Enter a valid 10-digit Indian mobile.';
       return { ok: false, message: 'Invalid mobile number.', fieldErrors };
+    }
+  }
+
+  if (s === 'gas_connection') {
+    const mob = stripMobile(v('mobile'));
+    if (!_MOB.test(mob)) {
+      fieldErrors.mobile = 'Enter a valid 10-digit Indian mobile.';
+    }
+    const provider = v('provider').toLowerCase();
+    if (!provider) {
+      fieldErrors.provider = 'Provider is required (e.g. indane, bharatgas, hp).';
+    }
+    if (Object.keys(fieldErrors).length) {
+      return { ok: false, message: 'Fix the highlighted fields.', fieldErrors };
+    }
+  }
+
+  if (s === 'cibil_report_v7' || s === 'cibil_report_v10') {
+    for (const f of fields) {
+      if (v(f.id).includes('|')) fieldErrors[f.id] = 'Remove the "|" character.';
+    }
+    if (!_MOB.test(stripMobile(v('mobile')))) fieldErrors.mobile = 'Enter a valid 10-digit Indian mobile.';
+    if (!_PAN.test(v('pan').toUpperCase())) fieldErrors.pan = 'Enter a valid PAN.';
+    if (s === 'cibil_report_v10') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v('email'))) fieldErrors.email = 'Enter a valid email.';
+      if (!/^\d{6}$/.test(v('pin_code'))) fieldErrors.pin_code = 'Enter a 6-digit PIN code.';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v('dob'))) fieldErrors.dob = 'Use yyyy-mm-dd.';
+      if (!/^(male|female|other)$/i.test(v('gender'))) fieldErrors.gender = 'Use Male, Female, or Other.';
+    }
+    if (Object.keys(fieldErrors).length) {
+      return { ok: false, message: 'Fix the highlighted fields.', fieldErrors };
     }
   }
 

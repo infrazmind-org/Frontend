@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { imageSrcForField } from './imageField';
 import { resultFieldLabel } from './resultFieldLabels';
 import { isMetadataKey } from './resultMetadata';
 import { unwrapVendorBusinessPayload } from './vendorResponseParsers';
@@ -79,6 +80,7 @@ function sortEntries<T extends [string, unknown] | [string, unknown[]]>(entries:
 }
 
 function partitionRecord(data: Record<string, unknown>) {
+  const images: [string, string][] = [];
   const scalars: [string, unknown][] = [];
   const nested: [string, unknown][] = [];
   const arrays: [string, unknown[]][] = [];
@@ -86,16 +88,39 @@ function partitionRecord(data: Record<string, unknown>) {
   for (const [key, value] of Object.entries(data)) {
     if (isMetadataKey(key)) continue;
     if (isEmptyDisplayValue(value)) continue;
-    if (Array.isArray(value)) arrays.push([key, value]);
+    const src = imageSrcForField(key, value);
+    if (src) images.push([key, src]);
+    else if (Array.isArray(value)) arrays.push([key, value]);
     else if (typeof value === 'object' && value !== null) nested.push([key, value]);
     else scalars.push([key, value]);
   }
 
   return {
+    images,
     scalars: sortEntries(scalars),
     nested: sortEntries(nested),
     arrays: sortEntries(arrays),
   };
+}
+
+function PhotoTiles({ images }: { images: [string, string][] }) {
+  if (!images.length) return null;
+  return (
+    <div className="flex flex-wrap gap-4">
+      {images.map(([key, src]) => (
+        <figure key={key} className="space-y-1.5">
+          <img
+            src={src}
+            alt={resultFieldLabel(key)}
+            className="h-40 w-32 rounded-xl border border-[var(--app-border)] bg-[var(--app-bg)] object-cover"
+          />
+          <figcaption className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
+            {resultFieldLabel(key)}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  );
 }
 
 function ResultAccordion({
@@ -280,7 +305,7 @@ function ResultHighlight({ data }: { data: Record<string, unknown> }) {
 }
 
 function CustomerResultBody({ data, depth = 0 }: { data: Record<string, unknown>; depth?: number }) {
-  const { scalars, nested, arrays } = partitionRecord(data);
+  const { images, scalars, nested, arrays } = partitionRecord(data);
 
   const highlightKeys = new Set(['fullname', 'full_name', 'name', 'pan', 'pan_number', 'pan_status', 'owner_name']);
   const gridScalars = scalars.filter(([k]) => !highlightKeys.has(k) || depth > 0);
@@ -298,6 +323,7 @@ function CustomerResultBody({ data, depth = 0 }: { data: Record<string, unknown>
   return (
     <div className="space-y-4">
       {showHighlight && <ResultHighlight data={data} />}
+      <PhotoTiles images={images} />
       {gridScalars.length > 0 && <ScalarGrid entries={gridScalars} />}
 
       {nested.map(([fieldKey, value], idx) => (
@@ -375,8 +401,8 @@ export function CustomerResultView({ data }: { data: Record<string, unknown> | u
     );
   }
 
-  const { scalars, nested, arrays } = partitionRecord(payload);
-  if (!scalars.length && !nested.length && !arrays.length) {
+  const { images, scalars, nested, arrays } = partitionRecord(payload);
+  if (!images.length && !scalars.length && !nested.length && !arrays.length) {
     return <p className="text-sm text-[var(--app-muted)]">No details to display.</p>;
   }
 

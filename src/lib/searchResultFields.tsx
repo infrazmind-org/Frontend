@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Download } from 'lucide-react';
 import { CustomerResultView } from './customerResultView';
 import { resultFieldLabel } from './resultFieldLabels';
 import { sanitizeCustomerFacingError } from './api';
@@ -96,10 +97,23 @@ export function CustomerSearchResult({ row }: { row: Record<string, unknown> }) 
 
   if (row.outcome === 'success' && row.data !== undefined) {
     const d = customerDisplayData(row.data);
-    if (Array.isArray(d)) {
-      return <CustomerResultView data={d} />;
-    }
-    return <CustomerResultView data={d} />;
+    const reportUrl = typeof row.reportUrl === 'string' && /^https?:\/\//i.test(row.reportUrl) ? row.reportUrl : null;
+    return (
+      <div className="space-y-4">
+        {reportUrl && (
+          <a
+            href={reportUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#0668E1] px-4 py-2 text-sm font-bold text-white hover:bg-[#0556ba]"
+          >
+            <Download className="h-4 w-4" aria-hidden />
+            Download report
+          </a>
+        )}
+        <CustomerResultView data={d} />
+      </div>
+    );
   }
 
   const legacy = legacyCustomerPayload(row);

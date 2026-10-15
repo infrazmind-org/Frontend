@@ -47,6 +47,8 @@ const METADATA_KEYS_NORMALIZED = new Set([
   // Skip tracing PDF report URL — admin only, not customer dashboard.
   'report',
   'report_url',
+  'html_link',
+  'html_url',
 ]);
 
 const ENVELOPE_STATUS_VALUES = new Set([
