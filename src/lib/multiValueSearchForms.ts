@@ -87,6 +87,7 @@ export function getSearchFormFields(slug: string, searchType: string): SearchFie
         },
       ];
     case 'cibil_report_v7':
+    case 'cibil_report_v11':
       return [
         { id: 'fullname', label: 'Full name', required: true, placeholder: 'As on PAN', inputType: 'text' },
         { id: 'mobile', label: 'Mobile number', required: true, placeholder: '10-digit Indian mobile', inputType: 'tel' },
@@ -115,6 +116,7 @@ export function getSearchFormFields(slug: string, searchType: string): SearchFie
     case 'mobile_to_prefill':
     case 'mobile_to_pan':
     case 'mobile_to_bank_account':
+    case 'mobile_to_gas':
       return [{ id: 'mobile', label: 'Mobile number', required: true, placeholder: '10-digit Indian mobile', inputType: 'tel' }];
     case 'rc_advanced_validation':
     case 'vehicle_rc_plus':
@@ -160,6 +162,7 @@ export function composeApiValue(
     case 'gas_connection':
       return `${stripMobile(v('mobile'))}|${v('provider').toLowerCase()}`;
     case 'cibil_report_v7':
+    case 'cibil_report_v11':
       return [v('fullname'), stripMobile(v('mobile')), v('pan').toUpperCase()].join('|');
     case 'cibil_report_v10':
       return [
@@ -183,6 +186,7 @@ export function composeApiValue(
     case 'mobile_to_prefill':
     case 'mobile_to_pan':
     case 'mobile_to_bank_account':
+    case 'mobile_to_gas':
       return stripMobile(v('mobile'));
     case 'rc_advanced_validation':
     case 'vehicle_rc_plus':
@@ -249,7 +253,7 @@ export function validateSearchForm(
     }
   }
 
-  if (s === 'mobile_to_address' || s === 'mobile_to_prefill' || s === 'mobile_to_pan' || s === 'mobile_to_bank_account') {
+  if (s === 'mobile_to_address' || s === 'mobile_to_prefill' || s === 'mobile_to_pan' || s === 'mobile_to_bank_account' || s === 'mobile_to_gas') {
     const mob = stripMobile(v('mobile'));
     if (!_MOB.test(mob)) {
       fieldErrors.mobile = 'Enter a valid 10-digit Indian mobile.';
@@ -287,7 +291,7 @@ export function validateSearchForm(
     }
   }
 
-  if (s === 'cibil_report_v7' || s === 'cibil_report_v10') {
+  if (s === 'cibil_report_v7' || s === 'cibil_report_v10' || s === 'cibil_report_v11') {
     for (const f of fields) {
       if (v(f.id).includes('|')) fieldErrors[f.id] = 'Remove the "|" character.';
     }

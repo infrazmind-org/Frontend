@@ -17,7 +17,7 @@ import { formatCredits } from '../lib/formatCredits';
 
 type Tab = 'single' | 'bulk' | 'reports';
 
-const REPORT_PRODUCT_SLUGS = new Set(['cibil_report_v7', 'cibil_report_v10']);
+const REPORT_PRODUCT_SLUGS = new Set(['cibil_report_v7', 'cibil_report_v10', 'cibil_report_v11']);
 
 type SearchResultRow = Record<string, string | undefined>;
 
