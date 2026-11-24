@@ -38,6 +38,18 @@ const PRIORITY_KEYS = [
   'expires',
 ];
 
+function parseEmbeddedJson(value: string): Record<string, unknown> | unknown[] | null {
+  const s = value.trim();
+  if (s.length < 2 || (s[0] !== '{' && s[0] !== '[')) return null;
+  try {
+    const parsed = JSON.parse(s) as unknown;
+    if (parsed && typeof parsed === 'object') return parsed as Record<string, unknown> | unknown[];
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 function isEmptyDisplayValue(value: unknown): boolean {
   if (value === null || value === undefined) return true;
   if (typeof value === 'string') return value.trim() === '';
@@ -178,6 +190,10 @@ function DisplayValue({ value, depth = 0 }: { value: unknown; depth?: number }) 
   }
   if (typeof value === 'object' && value !== null) {
     return <CustomerResultBody data={value as Record<string, unknown>} depth={depth + 1} />;
+  }
+  if (typeof value === 'string') {
+    const parsed = parseEmbeddedJson(value);
+    if (parsed !== null) return <DisplayValue value={parsed} depth={depth} />;
   }
   if (typeof value === 'string' && /^https?:\/\//i.test(value.trim())) {
     const url = value.trim();

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, FileText, LayoutDashboard, Search, Table2 } from 'lucide-react';
+import { Download, LayoutDashboard, Search, Table2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, formatFastApiDetail, sanitizeCustomerFacingError } from '../lib/api';
 import {
@@ -12,12 +12,9 @@ import { getSearchFormFields, validateSearchForm } from '../lib/multiValueSearch
 import { CustomerSearchResult } from '../lib/searchResultFields';
 import { refineSearchTypeOptions } from '../lib/searchTypeOptions';
 import NoApisEnabled from '../components/NoApisEnabled';
-import SavedReports from '../components/SavedReports';
 import { formatCredits } from '../lib/formatCredits';
 
-type Tab = 'single' | 'bulk' | 'reports';
-
-const REPORT_PRODUCT_SLUGS = new Set(['cibil_report_v7', 'cibil_report_v10', 'cibil_report_v11']);
+type Tab = 'single' | 'bulk';
 
 type SearchResultRow = Record<string, string | undefined>;
 
@@ -109,23 +106,33 @@ export default function Dashboard() {
     }
     let cancelled = false;
     setApisLoading(true);
-    void apiFetch('/api/user/my-apis', { token })
-      .then(async (res) => {
-        if (!res.ok) return [];
-        const data = (await res.json()) as unknown;
-        return Array.isArray(data) ? (data as MyApiRow[]) : [];
-      })
-      .then((rows) => {
-        if (!cancelled) setMyApis(rows);
-      })
-      .catch(() => {
-        if (!cancelled) setMyApis([]);
-      })
-      .finally(() => {
-        if (!cancelled) setApisLoading(false);
-      });
+    const load = () => {
+      void apiFetch('/api/user/my-apis', { token, cache: 'no-store' })
+        .then(async (res) => {
+          if (!res.ok) return [];
+          const data = (await res.json()) as unknown;
+          return Array.isArray(data) ? (data as MyApiRow[]) : [];
+        })
+        .then((rows) => {
+          if (!cancelled) setMyApis(rows);
+        })
+        .catch(() => {
+          if (!cancelled) setMyApis([]);
+        })
+        .finally(() => {
+          if (!cancelled) setApisLoading(false);
+        });
+    };
+    load();
+    const refresh = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
     };
   }, [token, authReady, user?.terms_ack_required]);
 
@@ -247,9 +254,6 @@ export default function Dashboard() {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'single', label: 'Single search', icon: Search },
     { id: 'bulk', label: 'Bulk search', icon: Table2 },
-    ...(myApis.some((a) => REPORT_PRODUCT_SLUGS.has(a.slug))
-      ? [{ id: 'reports' as Tab, label: 'My reports', icon: FileText }]
-      : []),
   ];
 
   const welcomeTitle = (() => {
@@ -395,8 +399,6 @@ export default function Dashboard() {
           <ResultsPanel title="Latest result" rows={singleResults} />
         </div>
       )}
-
-      {tab === 'reports' && token && <SavedReports token={token} />}
 
       {tab === 'bulk' && (
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:grid-rows-1 lg:gap-6 lg:overflow-hidden">

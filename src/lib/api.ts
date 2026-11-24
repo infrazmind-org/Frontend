@@ -3,6 +3,7 @@ export type ApiFetchOptions = {
   token?: string;
   body?: BodyInit | null;
   headers?: HeadersInit;
+  cache?: RequestCache;
 };
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
@@ -31,6 +32,7 @@ export function apiFetch(path: string, options: ApiFetchOptions = {}) {
     method: options.method || 'GET',
     headers,
     body: options.body ?? undefined,
+    cache: options.cache,
   });
 }
 
@@ -56,18 +58,12 @@ export function formatFastApiDetail(data: unknown): string {
       if (first && typeof first === 'object' && 'msg' in first) {
         return sanitizeCustomerFacingError(String((first as { msg: unknown }).msg));
       }
-      try {
-        return JSON.stringify(d);
-      } catch {
-        return 'Request failed';
-      }
+      return 'This search could not be completed. Please try again later or contact your administrator.';
     }
     if (d && typeof d === 'object') {
-      try {
-        return JSON.stringify(d);
-      } catch {
-        return 'Request failed';
-      }
+      const msg = (d as { message?: unknown; error?: unknown }).message ?? (d as { error?: unknown }).error;
+      if (typeof msg === 'string') return sanitizeCustomerFacingError(msg);
+      return 'This search could not be completed. Please try again later or contact your administrator.';
     }
   }
   if (data && typeof data === 'object' && 'error' in data && typeof (data as { error: unknown }).error === 'string') {
